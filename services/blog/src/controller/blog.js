@@ -1,18 +1,10 @@
 
-import axios from "axios";
-import { Request, Response } from "express";
-import { sequelize } from "../utils/db";
+import { sequelize } from "../utils/db.js";
 import { QueryTypes } from "sequelize";
-import { redisClient } from "../server";
+import { redisClient } from "../utils/reddisClient.js";
 
- interface IBlog{
-title:string,
-description:string,
-auther:string,
-blogContent:string,
-}
 
-export const getAllBlogs=async(req:Request,res:Response)=>{
+export const getAllBlogs=async(req,res)=>{
 
 try {
 
@@ -29,6 +21,7 @@ try {
         const blogs = await sequelize.query('SELECT * FROM blogs', {
   type: QueryTypes.SELECT,
 });
+console.log("bbbbbblogs",blogs);
 
 await redisClient.set(cachKey,JSON.stringify(blogs),{EX:3600})
 console.log("serving from db");
@@ -44,7 +37,7 @@ console.log("serving from db");
 }
 
 }
-export const getSingleBlog = async (req: Request, res: Response) => {
+export const getSingleBlog = async (req,res) => {
   try {
     const { id } = req.params;
 const cachKey=`blog:${id}`
@@ -55,7 +48,7 @@ const cachKey=`blog:${id}`
       return  
     }
     
-    const [blog] = await sequelize.query<IBlog>(
+    const [blog] = await sequelize.query(
       'SELECT * FROM blogs WHERE id = :id',
       {
         replacements: { id },

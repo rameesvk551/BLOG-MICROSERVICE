@@ -1,30 +1,17 @@
-import { Request, Response } from "express";
+
 import { Blog } from "../models/Blog.js";
+import { invalidateCacheJob } from "../utils/rabitMq.js";
 
-export interface IUser extends Document {
-    _id:string
-  name: string;
-  email: string;
-  image: string;
-  instagram: string;
-  bio: string;
-  facebook: string;
-  linkedIn: string;
-  pasword:string
-}
 
-// Custom Request with authenticated user
-export interface AuthenticatedRequest extends Request {
-  user: IUser | null;
-}
 
-export const createBlog=async(req:AuthenticatedRequest,res:Response)=>{
+
+export const createBlog=async(req,res)=>{
    
 try {
   const {title,description,blogContent,category}=req.body
 
 await Blog.create({title,description,blogContent,category})
-
+invalidateCacheJob(['blogs:*'])
 res.status(200).json({message:"new blog created"})
 } catch (error) {
   
@@ -35,7 +22,7 @@ res.status(200).json({message:"new blog created"})
 }
 
 
-export const updateBlog = async (req: AuthenticatedRequest, res: Response) => {
+export const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, blogContent, category } = req.body;
@@ -44,7 +31,7 @@ export const updateBlog = async (req: AuthenticatedRequest, res: Response) => {
       { title, description, blogContent, category },
       { where: { id } }
     );
-
+invalidateCacheJob(['blogs:*'])
     return res.status(200).json({ message: 'Blog updated successfully' });
   } catch (error) {
     console.error('Update error:', error);
@@ -52,12 +39,13 @@ export const updateBlog = async (req: AuthenticatedRequest, res: Response) => {
   }
 };
 
-export const deleteBlog=async(req:AuthenticatedRequest,res:Response)=>{
+export const deleteBlog=async(req,res)=>{
     const{id}=req.params
 try {
   await Blog.destroy({
   where:{id}
 })
+invalidateCacheJob(['blogs:*'])
 return res.status(200).json({ message: 'Blog deleted successfully' });
 
 } catch (error) {
